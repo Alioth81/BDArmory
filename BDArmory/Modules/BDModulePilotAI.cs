@@ -1484,7 +1484,7 @@ namespace BDArmory.Modules
             var referenceVelocityBack = Vector3.Cross(referenceVelocityUp, referenceVelocityRight).normalized;
             pitchError = -Vector3.SignedAngle(referenceVelocityUp, Vector3.ProjectOnPlane(targetPosition - vesselTransform.position, referenceVelocityRight), referenceVelocityRight);
             yawError = Vector3.SignedAngle(referenceVelocityUp, Vector3.ProjectOnPlane(targetPosition - vesselTransform.position, referenceVelocityBack), referenceVelocityBack);
-            debugString.AppendLine(String.Format("angle: {0:7,F4}, pitchError: {1,7:F4}, yawError: {2,7:F4}", Vector3.Angle(referenceVelocityUp, targetPosition - vesselTransform.position), pitchError, yawError));
+            debugString.AppendLine(String.Format("angle: {0,7:F4}, pitchError: {1,7:F4}, yawError: {2,7:F4}", Vector3.Angle(referenceVelocityUp, targetPosition - vesselTransform.position), pitchError, yawError));
             // Selectively apply limits to the pitch and yaw errors to help with pulling out of spins.
             var pitchAoA = -Vector3.SignedAngle(referenceVelocityUp, Vector3.ProjectOnPlane(vesselTransform.up, referenceVelocityRight), referenceVelocityRight);
             var yawAoA = Vector3.SignedAngle(referenceVelocityUp, Vector3.ProjectOnPlane(vesselTransform.up, referenceVelocityBack), referenceVelocityBack);
