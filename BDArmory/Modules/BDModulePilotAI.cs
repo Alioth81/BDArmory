@@ -1397,12 +1397,12 @@ namespace BDArmory.Modules
                 targetPosition = vesselTransform.position + ((targetPosition - vesselTransform.position).normalized * 100);
             }
 
-            Vector3d srfVel = vessel.Velocity();
-            if (srfVel != Vector3d.zero)
-            {
-                velocityTransform.rotation = Quaternion.LookRotation(srfVel, -vesselTransform.forward);
-            }
-            velocityTransform.rotation = Quaternion.AngleAxis(90, velocityTransform.right) * velocityTransform.rotation;
+            // Vector3d srfVel = vessel.Velocity();
+            // if (srfVel != Vector3d.zero)
+            // {
+            //     velocityTransform.rotation = Quaternion.LookRotation(srfVel, -vesselTransform.forward);
+            // }
+            // velocityTransform.rotation = Quaternion.AngleAxis(90, velocityTransform.right) * velocityTransform.rotation;
 
             //ang vel
             Vector3 localAngVel = vessel.angularVelocity;
@@ -1482,10 +1482,17 @@ namespace BDArmory.Modules
             var referenceVelocityUp = vessel.Velocity().IsZero() ? vesselTransform.up : (Vector3)vessel.Velocity().normalized;
             var referenceVelocityRight = Vector3.Cross(-vesselTransform.forward, referenceVelocityUp).normalized;
             var referenceVelocityBack = Vector3.Cross(referenceVelocityUp, referenceVelocityRight).normalized;
-            var steerLimits = steerMode == SteerModes.NormalFlight ? 45f : 25f;
-            pitchError = Mathf.Clamp(-Vector3.SignedAngle(referenceVelocityUp, Vector3.ProjectOnPlane(targetPosition - vesselTransform.position, referenceVelocityRight), referenceVelocityRight), -steerLimits, steerLimits);
-            yawError = Mathf.Clamp(Vector3.SignedAngle(referenceVelocityUp, Vector3.ProjectOnPlane(targetPosition - vesselTransform.position, referenceVelocityBack), referenceVelocityBack), -steerLimits, steerLimits);
+            pitchError = -Vector3.SignedAngle(referenceVelocityUp, Vector3.ProjectOnPlane(targetPosition - vesselTransform.position, referenceVelocityRight), referenceVelocityRight);
+            yawError = Vector3.SignedAngle(referenceVelocityUp, Vector3.ProjectOnPlane(targetPosition - vesselTransform.position, referenceVelocityBack), referenceVelocityBack);
             debugString.AppendLine(String.Format("angle: {0:7,F4}, pitchError: {1,7:F4}, yawError: {2,7:F4}", Vector3.Angle(referenceVelocityUp, targetPosition - vesselTransform.position), pitchError, yawError));
+            // Selectively apply limits to the pitch and yaw errors to help with pulling out of spins.
+            var pitchAoA = -Vector3.SignedAngle(referenceVelocityUp, Vector3.ProjectOnPlane(vesselTransform.up, referenceVelocityRight), referenceVelocityRight);
+            var yawAoA = Vector3.SignedAngle(referenceVelocityUp, Vector3.ProjectOnPlane(vesselTransform.up, referenceVelocityBack), referenceVelocityBack);
+            if (pitchAoA > maxAllowedAoA && pitchAoA * pitchError > 0f) // If beyond the max allowed AoA and a larger pitchError takes us further, reduce the error.
+            { pitchError *= Mathf.Exp(-(pitchAoA - maxAllowedAoA) / 10f); }
+            if (yawAoA > maxAllowedAoA && yawAoA * yawError > 0f) // If beyond the max allowed AoA and a larger yawError takes us further, reduce the error.
+            { yawError *= Mathf.Exp(-(yawAoA - maxAllowedAoA) / 10f); }
+            debugString.AppendLine(String.Format("pitchAoA: {0,7:F4}, pitchError: {1, 7:F4}, yawAoA: {2,7:F4}, yawError: {3,7:F4}", pitchAoA, pitchError, yawAoA, yawError));
 
             // User-set steer limits
             if (maxSteer > maxSteerAtMaxSpeed)
